@@ -1,0 +1,2 @@
+import {notFound} from "next/navigation"; import {Shell} from "@/components/Site"; import {Lang} from "@/lib/content"; import ServiceWorker from "@/components/ServiceWorker";
+export default async function LocaleLayout({children,params}:{children:React.ReactNode,params:Promise<{lang:string}>}){const {lang}=await params;if(lang!=="en"&&lang!=="hi")notFound();return <><ServiceWorker/><Shell lang={lang as Lang}>{children}</Shell></>}

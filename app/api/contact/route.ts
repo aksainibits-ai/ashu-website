@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";
+export async function POST(req:Request){if(process.env.ENABLE_CONTACT_SUBMISSIONS!=="true")return NextResponse.json({error:"Contact submissions are currently disabled."},{status:403});const body=await req.json().catch(()=>null);if(!body||typeof body.name!=="string"||typeof body.phone!=="string"||typeof body.message!=="string")return NextResponse.json({error:"Invalid submission."},{status:400});return NextResponse.json({error:"Submission storage is not configured. Do not submit personal information."},{status:503});}
