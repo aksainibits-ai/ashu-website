@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 export async function GET() {
   try {
-    const admin = createAdminClient();
+    const admin = await createClient();
     const { data, error } = await admin.from("appointment_slots")
       .select("id,starts_at,ends_at").eq("is_available", true)
       .gt("starts_at", new Date().toISOString()).order("starts_at").limit(100);

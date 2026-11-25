@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStaff, canApprove } from "@/lib/authz";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 const noStore = { "Cache-Control": "private, no-store" };
 const allowed = new Set(["confirmed","declined","cancelled","completed"]);
@@ -19,7 +19,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{id:
   const body = await request.json().catch(() => null);
   if (!body || typeof body.status !== "string" || !allowed.has(body.status))
     return NextResponse.json({ error: "Invalid appointment status." }, { status: 400, headers: noStore });
-  const admin = createAdminClient();
+  const admin = await createClient();
   const { data: current, error: readError } = await admin.from("appointments").select("id,slot_id,status").eq("id", id).maybeSingle();
   if (readError || !current) return NextResponse.json({ error: "Appointment not found." }, { status: 404, headers: noStore });
   const transitions: Record<string,string[]> = {

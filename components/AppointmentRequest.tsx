@@ -21,8 +21,7 @@ export default function AppointmentRequest({lang}:{lang:"en"|"hi"}) {
   }
   async function submit(e:React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setBusy(true); setNotice(""); setError(false);
-    const form = e.currentTarget;
-    const fd = new FormData(form);
+    const fd = new FormData(e.currentTarget);
     try {
       const r = await fetch("/api/appointments",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
         slotId, name:String(fd.get("name")||""), phone:String(fd.get("phone")||""),
@@ -32,7 +31,7 @@ export default function AppointmentRequest({lang}:{lang:"en"|"hi"}) {
       const d = await r.json();
       if(!r.ok) throw new Error(d.error || "Could not submit request");
       setNotice(en?"Your request has been received. The office will contact you to confirm it. The slot is not confirmed yet.":"आपका अनुरोध प्राप्त हुआ है। कार्यालय पुष्टि के लिए आपसे संपर्क करेगा। अभी समय की पुष्टि नहीं हुई है।");
-      form.reset(); await load();
+      e.currentTarget.reset(); await load();
     } catch(e) { setError(true); setNotice(e instanceof Error?e.message:"Submission unavailable."); }
     finally { setBusy(false); }
   }

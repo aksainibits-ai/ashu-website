@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { enforceRateLimit } from "@/lib/rate-limit";
+import { createClient } from "@/lib/supabase/server";
+import { createHash } from "node:crypto";
 export const dynamic = "force-dynamic";
 const noStore = { "Cache-Control": "no-store" };
 export async function POST(request: Request) {
@@ -12,8 +12,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid request origin." }, { status: 403, headers: noStore });
     if (!request.headers.get("content-type")?.toLowerCase().includes("application/json"))
       return NextResponse.json({ error: "JSON requests only." }, { status: 415, headers: noStore });
-    if (!(await enforceRateLimit(request, "appointment-request", 3, 3600)))
-      return NextResponse.json({ error: "Please try again later." }, { status: 429, headers: noStore });
     const raw = await request.text();
     if (raw.length > 6000) return NextResponse.json({ error: "Request is too large." }, { status: 413, headers: noStore });
     const body = JSON.parse(raw);
@@ -24,11 +22,12 @@ export async function POST(request: Request) {
       (body.email !== undefined && body.email !== "" && (typeof body.email !== "string" || body.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email))) ||
       !["in_person", "online"].includes(body.mode) || !["en", "hi"].includes(body.language) || body.consent !== true)
       return NextResponse.json({ error: "Please check the required fields and consent." }, { status: 400, headers: noStore });
-    const admin = createAdminClient();
+    const admin = await createClient();
     const { data, error } = await admin.rpc("request_appointment", {
       p_slot_id: body.slotId, p_name: body.name.trim(), p_phone: body.phone.trim(),
       p_email: typeof body.email === "string" ? body.email.trim() || null : null,
       p_mode: body.mode, p_language: body.language, p_consent: body.consent,
+      p_client_key: createHash("sha256").update(request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown").digest("hex"),
     });
     if (error) {
       const unavailable = /no longer available|invalid appointment request/i.test(error.message);

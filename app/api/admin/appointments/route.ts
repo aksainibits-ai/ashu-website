@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { getStaff, canApprove } from "@/lib/authz";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 const noStore = { "Cache-Control": "private, no-store" };
 export async function GET() {
   const staff = await getStaff();
   if (!staff) return NextResponse.json({ error: "Unauthorised" }, { status: 401, headers: noStore });
   if (!canApprove(staff.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403, headers: noStore });
-  const admin = createAdminClient();
+  const admin = await createClient();
   const [slots, appointments] = await Promise.all([
     admin.from("appointment_slots").select("id,starts_at,ends_at,is_available").gte("starts_at", new Date(Date.now()-86400000).toISOString()).order("starts_at").limit(150),
     admin.from("appointments").select("id,slot_id,name,phone,email,consultation_mode,language,status,created_at,retention_until,appointment_slots(starts_at,ends_at)").order("created_at", { ascending: false }).limit(100),
