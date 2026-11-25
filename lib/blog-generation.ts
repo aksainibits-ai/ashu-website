@@ -43,7 +43,7 @@ export async function fetchPrimarySources(urls: string[]) {
         headers: { "User-Agent": "AshuLegalResearchBot/1.0 (source retrieval; no form submission)", "Accept": "text/html,application/xhtml+xml,text/plain" },
         cache: "no-store",
       });
-      if (!response.ok) throw new Error(\`Source returned HTTP \${response.status}\`);
+      if (!response.ok) throw new Error(`Source returned HTTP ${response.status}`);
       const type = response.headers.get("content-type") ?? "";
       if (!/(text\/html|application\/xhtml\+xml|text\/plain)/i.test(type)) throw new Error("Source is not an HTML or text page.");
       const rawText = await response.text();
@@ -74,7 +74,7 @@ export async function generateBilingualDrafts(sourceUrls: string[], createdBy: s
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
   const sources = await fetchPrimarySources(sourceUrls);
   const client = new OpenAI({ apiKey, timeout: 45_000, maxRetries: 1 });
-  const sourcePack = sources.map((s, i) => \`SOURCE \${i + 1}\nTITLE: \${s.title}\nURL: \${s.url}\nTEXT:\n\${s.text}\`).join("\n\n");
+  const sourcePack = sources.map((s, i) => `SOURCE ${i + 1}\nTITLE: ${s.title}\nURL: ${s.url}\nTEXT:\n${s.text}`).join("\n\n");
   const completion = await client.chat.completions.create({
     model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
     response_format: { type: "json_object" },
@@ -91,7 +91,7 @@ export async function generateBilingualDrafts(sourceUrls: string[], createdBy: s
         "Return JSON: {\"category\":string,\"slug\":string,\"en\":{\"title\":string,\"summary\":string,\"body_md\":string,\"seo_title\":string,\"seo_description\":string},\"hi\":{\"title\":string,\"summary\":string,\"body_md\":string,\"seo_title\":string,\"seo_description\":string},\"verification_notes\":string[]}.",
         "Keep markdown body structured with headings. Include a Sources section with exact URLs."
       ].join(" ") },
-      { role: "user", content: \`Prepare the bilingual draft from these source pages.\n\n\${sourcePack}\` },
+      { role: "user", content: `Prepare the bilingual draft from these source pages.\n\n${sourcePack}` },
     ],
   });
   const raw = completion.choices[0]?.message?.content;
@@ -109,7 +109,7 @@ export async function generateBilingualDrafts(sourceUrls: string[], createdBy: s
     }
   }
   const slug = String(result.slug || result.en.title).toLowerCase().normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70) || \`legal-update-\${Date.now()}\`;
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70) || `legal-update-${Date.now()}`;
   const admin = createAdminClient();
   const notes = Array.isArray(result.verification_notes) ? result.verification_notes.filter((x: unknown) => typeof x === "string").slice(0, 20) : ["AI verification notes were not returned; advocate must independently verify all legal details."];
   const rows = (["en", "hi"] as const).map(language => ({
@@ -120,6 +120,6 @@ export async function generateBilingualDrafts(sourceUrls: string[], createdBy: s
     status: "draft", created_by: createdBy,
   }));
   const { data, error } = await admin.from("articles").insert(rows).select("id,slug,language,title,status,created_at");
-  if (error) throw new Error(\`Draft save failed: \${error.message}\`);
+  if (error) throw new Error(`Draft save failed: ${error.message}`);
   return data;
 }

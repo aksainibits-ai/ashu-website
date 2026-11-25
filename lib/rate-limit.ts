@@ -9,7 +9,7 @@ export function requestIp(request: Request) {
 
 export async function enforceRateLimit(request: Request, scope: string, limit: number, windowSeconds: number) {
   const ipHash = createHash("sha256").update(requestIp(request)).digest("hex");
-  const key = createHash("sha256").update(\`\${scope}:\${ipHash}\`).digest("hex");
+  const key = createHash("sha256").update(`${scope}:${ipHash}`).digest("hex");
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("consume_rate_limit", {
     p_key: key, p_limit: limit, p_window_seconds: windowSeconds,

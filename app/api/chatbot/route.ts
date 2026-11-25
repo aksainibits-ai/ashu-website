@@ -34,8 +34,8 @@ export async function POST(request: Request) {
           "Do not claim to be an advocate or speak on behalf of Advocate Ashutosh Saini. Do not create a client relationship.",
           "Do not invent judgments, citations, dates, statutory text or current legal updates. State uncertainty and recommend official primary sources.",
           "Do not solicit engagements, promise contact or offer outcome guarantees.",
-          \`Public profile facts, only if asked: \${profile.name}, \${profile.title}, \${profile.location}, phone \${profile.phone}, email \${profile.email}.\`,
-          \`Reply in \${language}. Keep concise and include a brief general-information disclaimer.\`
+          `Public profile facts, only if asked: ${profile.name}, ${profile.title}, ${profile.location}, phone ${profile.phone}, email ${profile.email}.`,
+          `Reply in ${language}. Keep concise and include a brief general-information disclaimer.`
         ].join(" ") },
         { role: "user", content: message },
       ],

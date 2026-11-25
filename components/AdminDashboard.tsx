@@ -43,7 +43,7 @@ export default function AdminDashboard({ role }: { role: "owner" | "advocate" | 
   async function updateArticle(article: Article, patch: Record<string, unknown>) {
     setBusy(true); setNotice("");
     try {
-      const response = await fetch(\`/api/admin/articles/\${article.id}\`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
+      const response = await fetch(`/api/admin/articles/${article.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Update failed");
       setNotice("Article saved."); await load();
@@ -67,15 +67,15 @@ export default function AdminDashboard({ role }: { role: "owner" | "advocate" | 
       {articles.length === 0 && <p className="muted">No articles yet.</p>}
       {articles.map(article => <article className="panel p-5 space-y-3" key={article.id}>
         <div className="flex flex-wrap justify-between gap-2"><span className="eyebrow">{article.language.toUpperCase()} · {article.category}</span><span className="text-xs gold">{article.status.toUpperCase()}</span></div>
-        <label className="block text-sm">Title<input className="field mt-1" maxLength={180} defaultValue={article.title} id={\`title-\${article.id}\`} /></label>
-        <label className="block text-sm">Article body (Markdown)<textarea className="field mt-1 min-h-56" maxLength={40000} defaultValue={article.body_md} id={\`body-\${article.id}\`} /></label>
+        <label className="block text-sm">Title<input className="field mt-1" maxLength={180} defaultValue={article.title} id={`title-${article.id}`} /></label>
+        <label className="block text-sm">Article body (Markdown)<textarea className="field mt-1 min-h-56" maxLength={40000} defaultValue={article.body_md} id={`body-${article.id}`} /></label>
         <p className="muted text-xs">Slug: {article.slug} · {new Date(article.created_at).toLocaleString()}</p>
         {article.source_urls?.length > 0 && <div className="text-xs muted break-all">Sources: {article.source_urls.join(" · ")}</div>}
         {article.verification_notes?.length > 0 && <p className="text-sm gold">Verification notes: {article.verification_notes.join(" ")}</p>}
         <div className="flex flex-wrap gap-2">
           <button className="btn btn-outline" disabled={busy} onClick={() => updateArticle(article, {
-            title: (document.getElementById(\`title-\${article.id}\`) as HTMLInputElement)?.value,
-            body_md: (document.getElementById(\`body-\${article.id}\`) as HTMLTextAreaElement)?.value
+            title: (document.getElementById(`title-${article.id}`) as HTMLInputElement)?.value,
+            body_md: (document.getElementById(`body-${article.id}`) as HTMLTextAreaElement)?.value
           })}>Save edits</button>
           {article.status === "draft" && <button className="btn btn-outline" disabled={busy} onClick={() => changeStatus(article, "review")}>Send to review</button>}
           {mayApprove && article.status === "review" && <button className="btn" disabled={busy} onClick={() => changeStatus(article, "approved")}>Approve</button>}
@@ -90,7 +90,7 @@ export default function AdminDashboard({ role }: { role: "owner" | "advocate" | 
       {enquiries.length === 0 && <p className="muted">No stored enquiries or submissions are disabled.</p>}
       {enquiries.map(item => <article className="panel p-5 space-y-2" key={item.id}>
         <div className="flex flex-wrap justify-between gap-2"><strong>{item.name}</strong><span className="muted text-xs">{new Date(item.created_at).toLocaleString()}</span></div>
-        <p className="text-sm">{item.phone} {item.email ? \`· \${item.email}\` : ""}</p>
+        <p className="text-sm">{item.phone} {item.email ? `· ${item.email}` : ""}</p>
         <p className="muted text-sm">{item.category || "General"} · {item.message}</p>
       </article>)}
     </section>}
