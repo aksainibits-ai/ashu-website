@@ -24,6 +24,6 @@ export default function LegalChatbot({lang,enabled}:{lang:"en"|"hi";enabled:bool
    </div>
    <form onSubmit={send} className="flex gap-2 border-t border-white/10 p-3"><input className="field min-w-0" value={input} onChange={e=>setInput(e.target.value)} maxLength={1800} placeholder={en?"Ask a general question":"सामान्य प्रश्न पूछें"} aria-label="Your question"/><button className="btn" disabled={busy||!input.trim()}>{en?"Send":"भेजें"}</button></form>
   </section>}
-  <button className="btn rounded-full shadow-xl" onClick={()=>setOpen(v=>!v)} aria-expanded={open}>{open?(en?"Close":"बंद करें"):(en?"Legal help":"कानूनी जानकारी")}</button>
+  <button className="btn rounded-full shadow-xl" onClick={()=>setOpen(v=>!v)} aria-expanded={open}>{open?(en?"Close":"बंद करें"):(en?"Ashu AI":"आशु AI")}</button>
  </div>;
 }
