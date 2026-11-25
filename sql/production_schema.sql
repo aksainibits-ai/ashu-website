@@ -176,3 +176,20 @@ grant execute on function public.consume_rate_limit(text, integer, integer) to s
 -- First administrator accounts must be created/invited in Supabase Auth.
 -- Then insert their exact auth user IDs here with the intended role.
 -- Do not grant roles based on user-editable user_metadata.
+
+
+create or replace function public.cleanup_rate_limits()
+returns integer
+language plpgsql
+security definer
+set search_path = pg_catalog, private
+as $$
+declare removed integer;
+begin
+  delete from private.api_rate_limits where updated_at < clock_timestamp() - interval '7 days';
+  get diagnostics removed = row_count;
+  return removed;
+end;
+$$;
+revoke all on function public.cleanup_rate_limits() from public, anon, authenticated;
+grant execute on function public.cleanup_rate_limits() to service_role;
