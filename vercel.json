@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/daily-drafts",
+      "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/publish-scheduled",
+      "schedule": "45 2 * * *"
+    },
+    {
+      "path": "/api/cron/retention",
+      "schedule": "15 3 * * *"
+    }
+  ]
+}

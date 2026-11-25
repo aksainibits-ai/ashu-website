@@ -1,58 +1,69 @@
 # Ashu Website — Advocate Ashutosh Saini
 
-A bilingual (English/Hindi) Next.js starter for a professional informational website and PWA.
+Bilingual (English/Hindi) Next.js website and private editorial workflow.
 
-## Included
-- `/en/` and `/hi/` locale routes and language switch
-- Dark-luxury visual system, responsive navigation, dark/light toggle, reduced-motion CSS
-- Home, About, Experience, Qualifications, Practice Areas, Courts, Blog, Contact, Disclaimer, Privacy, FAQs
-- Blog search/category filter UI with clearly labelled sample placeholders
-- SEO metadata, sitemap, robots, manifest and A-monogram app icon
-- Basic offline cache for public pages; admin and API routes are excluded
-- Server-side chatbot API scaffold, disabled by default
-- Contact API disabled by default
-- Supabase schema starter for articles, roles, enquiries, newsletter and push subscriptions
+## Stack
 
-## Run locally
-1. Install Node.js 20+.
-2. Copy `.env.example` to `.env.local`.
-3. `npm install`
-4. `npm run dev`
-5. Open http://localhost:3000/en/
+- Next.js App Router, TypeScript and Tailwind CSS
+- Vercel hosting and scheduled jobs
+- Supabase Auth, Postgres and Row Level Security
+- OpenAI API called only from server routes
+- English/Hindi public article publishing with advocate approval
 
-## Deploy to a temporary URL
-1. Create a GitHub repository and push this folder.
-2. Import the repository into Vercel.
-3. Add `NEXT_PUBLIC_SITE_URL` as the Vercel deployment URL.
-4. Deploy. Purchase/connect your domain later in Vercel project settings and update `NEXT_PUBLIC_SITE_URL`.
+## Core routes
 
-## Supabase and administration
-Create a Supabase project and run `sql/schema.sql`. The SQL deliberately enables RLS without permissive policies. Before using the admin dashboard, implement Supabase Auth, role checks on every server action/API route, secure session handling, audit logs, backup/retention, and advocate-only approval/publishing controls. The `/admin` page is an instructional placeholder, not a functioning secure admin portal.
+- Public website: \`/en/\` and \`/hi/\`
+- Blog: \`/[lang]/blog\` and \`/[lang]/blog/[slug]\`
+- Admin: \`/[lang]/admin\`
+- Admin sign-in: \`/[lang]/admin/login\`
+- Auth callback: \`/auth/callback\`
 
-## AI
-Set `OPENAI_API_KEY` only in Vercel server-side environment variables. Never place it in a `NEXT_PUBLIC_` variable or commit it. The chatbot route is disabled unless `ENABLE_CHATBOT=true`. Review provider terms, privacy notices, prompt behaviour, abuse limits and logging before enabling. Current route provides general legal education only and rejects data collection.
+## Admin and roles
 
-## Compliance-first feature flags
-Keep all flags false until professional and privacy review is complete:
-- `ENABLE_CONTACT_SUBMISSIONS`
-- `ENABLE_CHATBOT`
-- `ENABLE_WHATSAPP`
-- `ENABLE_NEWSLETTER`
-- `ENABLE_PUSH_NOTIFICATIONS`
+- No public registration. Administrators are invited in Supabase Auth.
+- Each admin API verifies the authenticated user with Supabase Auth and reads the server-controlled \`profiles.role\`.
+- \`owner\`: full admin access.
+- \`advocate\`: edit, approve, publish, schedule and delete articles; view enquiries.
+- \`editor\`: prepare/edit drafts and submit them for review; cannot approve or publish.
+- Only the advocate/owner can approve. Publication requires a previously approved article.
+- The privileged Supabase secret is isolated in server-only modules.
 
-The contact endpoint intentionally does not store data yet. No WhatsApp widget, newsletter capture, push subscription flow or visitor lead collection is active in this starter. Implement them only after consent, security, retention, deletion, vendor and BCI review.
+Run \`sql/production_schema.sql\` in a newly created Supabase project, then follow \`sql/ADMIN_SETUP.md\` to invite and assign the two administrator accounts.
 
-## Required before public launch
-- Verify BCI/State Bar Council website requirements and any intimation/approval needed under applicable rules, including Rule 36 and its Schedule.
-- Confirm enrolment number/date, State Bar Council, Bar Association membership and truth declaration.
-- Verify all work dates, court descriptions and each listed practice area; remove anything not accurate.
-- Confirm whether the professional profile and all contact/website features are permissible in their final presentation.
-- Add verified office address only if approved for public display; then configure the map.
-- Replace monogram with approved logo and photograph.
-- Have Indian privacy counsel review the final policy and all collection/analytics/vendor flows under applicable data-protection law.
-- Add real bilingual blog content only after source checking and advocate approval. No AI draft should auto-publish.
-- Set up authenticated admin with least privilege, MFA, backups, rate limits, monitoring and security testing.
-- Configure Search Console, analytics and consent/notice requirements before tracking.
+## Bilingual editorial workflow
 
-## Important limitations
-This is a complete starter codebase and visual website foundation, not a deployed production service. It does not include a production-ready admin authentication system, article-generation scheduler/research pipeline, persistent contact storage, newsletter provider, push delivery service, Google Maps pin, or future client portal. Those require provider accounts, credentials, verified data and security/legal review. Do not treat the placeholder admin route or database schema as production-secure.
+- Supply URLs from the allowlisted official primary-source domains.
+- The server fetches source text and asks OpenAI for an English/Hindi draft pair.
+- Both entries are saved with source URLs and verification notes in \`draft\` status.
+- The admin can edit, send to review, approve, publish now, schedule or archive/delete.
+- A daily Vercel Cron job can read explicitly configured official RSS/Atom feeds and create one draft pair. A second daily job publishes only articles that were approved by an advocate and whose scheduled time has passed.
+- AI research is not a substitute for checking original judgments, statutory text, dates and citations. Advocate review remains mandatory.
+
+## Enquiries and chatbot
+
+- Contact submissions are disabled by default.
+- If deliberately enabled after privacy and professional-conduct review, the server validates consent and fields, rate-limits requests and stores submissions with a 90-day retention timestamp.
+- Enquiries have no public Data API policy. Only an authenticated owner/advocate endpoint can read them.
+- A daily retention job deletes expired enquiries.
+- Chatbot responses are not persisted. The API is rate-limited and warns against sharing personal/confidential information. It provides general legal information only.
+- OpenAI and Supabase secrets are server-only; never use a \`NEXT_PUBLIC_\` prefix for secret keys.
+
+## Required environment variables
+
+See \`.env.example\`. In Vercel, configure Supabase URL, publishable key, server secret, OpenAI key, CRON_SECRET and verified official feed URLs. Keep \`ENABLE_CONTACT_SUBMISSIONS=false\` and \`ENABLE_CHATBOT=false\` until the required review and testing are complete.
+
+## Local development
+
+1. Use Node.js 20 or newer.
+2. Install dependencies with \`npm install\`.
+3. Copy \`.env.example\` to \`.env.local\` and fill in test project values.
+4. Run \`npm run dev\`.
+5. Run \`npm run typecheck\` and \`npm run build\` before deployment.
+
+## Not yet operational until configured
+
+The code is committed as an implementation foundation. It is not a live connected service until a Supabase project exists, schema is applied, administrator UUIDs are assigned, Vercel secrets and cron feeds are configured, and builds/security checks pass. The current connected Supabase account did not expose a project when inspected.
+
+## Professional and privacy compliance
+
+This is an informational site, not legal clearance. BCI Rule 36 and applicable requirements must be reviewed before public launch. A disclaimer does not make otherwise prohibited advertising or solicitation permissible. Confirm enrolment and Bar Council details, allowed website information, approved content, exact office location, privacy notice, consent, retention and vendor terms before enabling data collection or outreach.

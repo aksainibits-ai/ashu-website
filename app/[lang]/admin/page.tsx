@@ -1,2 +1,17 @@
-import {Lang} from "@/lib/content";import {PageTitle} from "@/components/Site";
-export default async function Admin({params}:{params:Promise<{lang:Lang}>}){const {lang}=await params;return <section className="container section"><PageTitle eyebrow="Private area" title="Admin dashboard" desc="This starter dashboard is intentionally not connected to public publishing. Configure Supabase authentication, role policies and server-side authorisation before use."/><div className="panel p-8"><h2 className="serif text-2xl">Setup required</h2><ul className="list-disc pl-6 muted leading-8 mt-4"><li>Create Supabase project and run sql/schema.sql.</li><li>Configure authentication and invite administrator accounts.</li><li>Implement and test role-based access policies before enabling this route.</li><li>Require advocate approval before publishing any article.</li></ul><p className="gold mt-5">Do not use this page as a secure admin system until the setup checklist is completed.</p></div></section>}
+import { redirect } from "next/navigation";
+import { getStaff } from "@/lib/authz";
+import { PageTitle } from "@/components/Site";
+import AdminDashboard from "@/components/AdminDashboard";
+
+export const dynamic = "force-dynamic";
+
+export default async function Admin({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  if (lang !== "en" && lang !== "hi") redirect("/en/");
+  const staff = await getStaff();
+  if (!staff) redirect(`/${lang}/admin/login`);
+  return <section className="container section">
+    <PageTitle eyebrow="Private administration" title="Admin dashboard" desc={`Signed in as ${staff.email || "administrator"} · Role: ${staff.role}. All actions are checked again on the server.`} />
+    <div className="flex justify-end mb-6"><form action="/api/auth/signout" method="post"><button className="btn btn-outline" type="submit">Sign out</button></form></div><AdminDashboard role={staff.role} />
+  </section>;
+}
