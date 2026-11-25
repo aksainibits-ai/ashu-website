@@ -36,14 +36,7 @@ const answers = {
 function matchesKeyword(message: string, keyword: string) {
   const key = keyword.toLocaleLowerCase().trim();
   if (/[\u0900-\u097f]/u.test(key)) return message.includes(key);
-  const escaped = key.replace(/[.*+?^{}()|[\]\\]/g, "\\function getAnswer(message: string, language: "en" | "hi") {
-  const normalized = message.toLocaleLowerCase();
-  const match = answers[language].find((entry) => entry.keys.some((key) => normalized.includes(key.toLocaleLowerCase())));
-  if (match) return match.answer;
-  return language === "hi"
-    ? "इस विषय पर मेरे पास अभी सत्यापित सामान्य उत्तर उपलब्ध नहीं है। कृपया India Code, संबंधित न्यायालय की आधिकारिक वेबसाइट या सरकारी स्रोत देखें। मैं व्यक्तिगत कानूनी सलाह नहीं दे सकता।"
-    : "I do not have a verified general answer for that topic in this offline information assistant. Please consult India Code, the relevant court's official website or another government source. I cannot provide individual legal advice.";
-}").replace(/\s+/g, "\\s+");
+  const escaped = key.replace(/[.*+?^{}()|[\]\\]/g, (character) => "\\" + character).replace(/\s+/g, "\\s+");
   return new RegExp("(?:^|[^a-z0-9])" + escaped + "(?:$|[^a-z0-9])", "i").test(message);
 }
 
