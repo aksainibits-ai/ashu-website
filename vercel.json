@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/appointment-slots",
+      "schedule": "30 21 * * *"
+    },
+    {
       "path": "/api/cron/daily-drafts",
       "schedule": "30 2 * * *"
     },
