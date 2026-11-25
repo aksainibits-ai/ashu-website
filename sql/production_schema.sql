@@ -68,6 +68,10 @@ create policy "staff can edit articles" on public.articles for update to authent
     ))
   );
 
+drop policy if exists "advocate can delete articles" on public.articles;
+create policy "advocate can delete articles" on public.articles for delete to authenticated
+  using (exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('owner','advocate')));
+
 grant select on public.articles to anon;
 grant select, insert, update, delete on public.articles to authenticated, service_role;
 
