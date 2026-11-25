@@ -3,42 +3,74 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
+const noStore = { "Cache-Control": "no-store" };
+const reply = (body: Record<string, unknown>, status = 200) =>
+  NextResponse.json(body, { status, headers: noStore });
 
 export async function POST(request: Request) {
   if (process.env.ENABLE_CONTACT_SUBMISSIONS !== "true") {
-    return NextResponse.json({ error: "Contact submissions are not enabled." }, { status: 403 });
+    return reply({ error: "Contact submissions are not enabled." }, 403);
   }
-  const expectedOrigin = process.env.NEXT_PUBLIC_SITE_URL;
-  const origin = request.headers.get("origin");
+
   try {
+    const origin = request.headers.get("origin");
     const requestOrigin = new URL(request.url).origin;
-    const canonicalOrigin = expectedOrigin ? new URL(expectedOrigin).origin : null;
+    const canonicalOrigin = process.env.NEXT_PUBLIC_SITE_URL
+      ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
+      : null;
     if (!origin || (origin !== requestOrigin && origin !== canonicalOrigin)) {
-      return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
+      return reply({ error: "Invalid request origin." }, 403);
     }
+
+    if (!request.headers.get("content-type")?.toLowerCase().includes("application/json")) {
+      return reply({ error: "JSON requests only." }, 415);
+    }
+    const declaredLength = Number(request.headers.get("content-length") || 0);
+    if (declaredLength > 12000) return reply({ error: "Submission is too large." }, 413);
+
+    const raw = await request.text();
+    if (raw.length > 12000) return reply({ error: "Submission is too large." }, 413);
+    let body: unknown;
+    try { body = JSON.parse(raw); } catch { return reply({ error: "Invalid submission." }, 400); }
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return reply({ error: "Invalid submission." }, 400);
+    }
+
+    const input = body as Record<string, unknown>;
+    // Silently accept honeypot submissions without storing them.
+    if (typeof input.website === "string" && input.website.trim()) return reply({ ok: true });
+
     if (!(await enforceRateLimit(request, "contact", 3, 3600))) {
-      return NextResponse.json({ error: "Please try again later." }, { status: 429 });
+      return reply({ error: "Please try again later." }, 429);
     }
-    const body = await request.json().catch(() => null);
-    if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid submission." }, { status: 400 });
-    if (typeof body.website === "string" && body.website.trim()) return NextResponse.json({ ok: true });
-    const { name, phone, email, category, message, consent } = body;
-    if (typeof name !== "string" || name.trim().length < 2 || name.length > 100 ||
-        typeof phone !== "string" || !/^[+0-9() .-]{7,24}$/.test(phone) ||
-        typeof message !== "string" || message.trim().length < 10 || message.length > 1500 ||
-        consent !== true || (email && (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))) {
-      return NextResponse.json({ error: "Please check the required fields and consent." }, { status: 400 });
+
+    const { name, phone, email, category, message, consent } = input;
+    const validEmail = email === undefined || email === null || email === "" ||
+      (typeof email === "string" && email.length <= 254 &&
+       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+    const validCategory = category === undefined || category === null ||
+      (typeof category === "string" && category.length <= 80);
+
+    if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 100 ||
+        typeof phone !== "string" || !/^[+0-9() .-]{7,24}$/.test(phone.trim()) ||
+        typeof message !== "string" || message.trim().length < 10 || message.trim().length > 1500 ||
+        consent !== true || !validEmail || !validCategory) {
+      return reply({ error: "Please check the required fields and consent." }, 400);
     }
+
     const admin = createAdminClient();
     const { error } = await admin.from("enquiries").insert({
-      name: name.trim(), phone: phone.trim(), email: email?.trim() || null,
-      category: typeof category === "string" ? category.slice(0, 80) : null,
-      message: message.trim(), consent_at: new Date().toISOString(),
+      name: name.trim(),
+      phone: phone.trim(),
+      email: typeof email === "string" ? email.trim() || null : null,
+      category: typeof category === "string" ? category.trim() || null : null,
+      message: message.trim(),
+      consent_at: new Date().toISOString(),
       retention_until: new Date(Date.now() + 90 * 86400000).toISOString(),
     });
-    if (error) throw new Error("Enquiry could not be saved.");
-    return NextResponse.json({ ok: true }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    if (error) return reply({ error: "Submissions are temporarily unavailable." }, 503);
+    return reply({ ok: true }, 201);
   } catch {
-    return NextResponse.json({ error: "Submissions are temporarily unavailable." }, { status: 503 });
+    return reply({ error: "Submissions are temporarily unavailable." }, 503);
   }
 }
