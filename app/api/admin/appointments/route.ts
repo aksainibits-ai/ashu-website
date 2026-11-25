@@ -9,7 +9,7 @@ export async function GET() {
   if (!canApprove(staff.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403, headers: noStore });
   const admin = await createClient();
   const [slots, appointments] = await Promise.all([
-    admin.from("appointment_slots").select("id,starts_at,ends_at,is_available").gte("starts_at", new Date(Date.now()-86400000).toISOString()).order("starts_at").limit(150),
+    admin.from("appointment_slots").select("id,starts_at,ends_at,is_available").gte("starts_at", new Date(Date.now()-86400000).toISOString()).order("starts_at").limit(300),
     admin.from("appointments").select("id,slot_id,name,phone,email,consultation_mode,language,status,created_at,retention_until,appointment_slots(starts_at,ends_at)").order("created_at", { ascending: false }).limit(100),
   ]);
   if (slots.error || appointments.error) return NextResponse.json({ error: "Could not load appointment records." }, { status: 500, headers: noStore });
