@@ -31,7 +31,7 @@ const entries:Entry[]=[
 {language:"hi",title:"Court jurisdiction",category:"court-procedure",patterns:["कौन सा न्यायालय","न्यायालय का क्षेत्राधिकार","सर्वोच्च न्यायालय","उच्च न्यायालय","जिला न्यायालय","मुकदमा कहाँ दायर करें"],answer:"भारत की न्यायालय व्यवस्था में सर्वोच्च न्यायालय, उच्च न्यायालय और अधीनस्थ न्यायालय शामिल हैं। सही मंच विषय, क्षेत्रीय और आर्थिक अधिकारिता, लागू अधिनियम तथा कार्यवाही के चरण पर निर्भर करता है। वर्तमान नियम और दाखिला संबंधी जानकारी के लिए संबंधित न्यायालय की आधिकारिक वेबसाइट देखें।",sources:[sci,dhc,courts]}
 ];
 const stop=new Set(["the","a","an","is","are","was","were","what","how","can","i","my","me","please","tell","about","for","to","of","in","on","and","or","का","की","के","है","हैं","क्या","कैसे","मुझे","बताएं","बताइए","और","में","से","पर","को"]);
-function norm(v:string){return v.normalize("NFKC").toLocaleLowerCase("en-IN").replace(/[’']/g,"").replace(/[^\\p{L}\\p{N}\\s]/gu," ").replace(/\\s+/g," ").trim();}
+function norm(v:string){return v.normalize("NFKC").toLocaleLowerCase("en-IN").replace(/[’']/g,"").replace(/[^\p{L}\p{N}\s]/gu," ").replace(/\s+/g," ").trim();}
 function tokens(v:string){return norm(v).split(" ").filter(t=>t.length>1&&!stop.has(t));}
 function score(question:string,patterns:string[]){
  const q=norm(question),qt=tokens(question);let best=0;
@@ -43,7 +43,7 @@ export function answerFromKnowledge(question:string,language:"en"|"hi",custom:Cu
  const built=entries.filter(e=>e.language===language).map(e=>({e,s:score(question,e.patterns)})).sort((a,b)=>b.s-a.s)[0];
  const extra=custom.filter(e=>e.language===language).map(e=>({e,s:score(question,e.patterns)})).sort((a,b)=>b.s-a.s)[0];
  if(extra&&extra.s>=.4&&(!built||extra.s>built.s)){
-  const safe=extra.e.sources.flatMap(url=>{try{const u=new URL(url);return u.protocol==="https:"?[{label:u.hostname.replace(/^www\\./,""),url:u.toString()}]:[]}catch{return[]}});
+  const safe=extra.e.sources.flatMap(url=>{try{const u=new URL(url);return u.protocol==="https:"?[{label:u.hostname.replace(/^www\./,""),url:u.toString()}]:[]}catch{return[]}});
   return {answer:extra.e.answer,sources:safe,confidence:extra.s,category:extra.e.category};
  }
  if(!built||built.s<.38)return null;
