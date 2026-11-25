@@ -27,6 +27,8 @@ export default function AdminDashboard({ role }: { role: "owner" | "advocate" | 
   const [articles, setArticles] = useState<Article[]>([]);
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [activity, setActivity] = useState<Activity[]>([]);
+  const [enquiryFilter, setEnquiryFilter] = useState("all");
+  const [enquirySearch, setEnquirySearch] = useState("");
   const [sources, setSources] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -114,6 +116,16 @@ export default function AdminDashboard({ role }: { role: "owner" | "advocate" | 
     published: articles.filter(a => a.status === "published").length,
   };
   const openEnquiries = enquiries.filter(e => e.status !== "closed").length;
+  const newEnquiries = enquiries.filter(e => e.status === "new").length;
+  const reviewingEnquiries = enquiries.filter(e => e.status === "reviewing").length;
+  const respondedEnquiries = enquiries.filter(e => e.status === "responded").length;
+  const visibleEnquiries = enquiries.filter(item => {
+    const statusMatch = enquiryFilter === "all" || item.status === enquiryFilter;
+    const query = enquirySearch.trim().toLocaleLowerCase();
+    const searchMatch = !query || [item.name, item.phone, item.email || "", item.category || "", item.message]
+      .some(value => value.toLocaleLowerCase().includes(query));
+    return statusMatch && searchMatch;
+  });
 
   return <div className="space-y-10">
     <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Website content overview">
@@ -187,16 +199,32 @@ export default function AdminDashboard({ role }: { role: "owner" | "advocate" | 
 
     {mayApprove && <section className="space-y-4">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <div><h2 className="serif text-2xl">Private enquiries</h2><p className="muted text-sm mt-1">{openEnquiries} open · {enquiries.length} shown</p></div>
+        <div><h2 className="serif text-2xl">Private enquiries</h2><p className="muted text-sm mt-1">{openEnquiries} open · {enquiries.length} total · {visibleEnquiries.length} matching</p></div>
         <button className="btn btn-outline" disabled={busy} onClick={() => loadEnquiries().catch(e => setNotice(e.message))}>Refresh</button>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="panel p-4"><p className="muted text-xs">New enquiries</p><p className="serif mt-1 text-2xl">{newEnquiries}</p></div>
+        <div className="panel p-4"><p className="muted text-xs">Under review</p><p className="serif mt-1 text-2xl">{reviewingEnquiries}</p></div>
+        <div className="panel p-4"><p className="muted text-xs">Responded</p><p className="serif mt-1 text-2xl">{respondedEnquiries}</p></div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
+        <input className="field" value={enquirySearch} onChange={e => setEnquirySearch(e.target.value)} placeholder="Search name, phone, email or enquiry text" aria-label="Search private enquiries" />
+        <select className="field" value={enquiryFilter} onChange={e => setEnquiryFilter(e.target.value)} aria-label="Filter enquiries by status">
+          <option value="all">All statuses</option>{enquiryStatuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
       </div>
       <p className="muted text-sm">Restricted to advocate/owner accounts. Status changes and internal-note updates are recorded in the private activity log. Handle enquiries confidentially and delete them according to the approved retention policy.</p>
       {enquiries.length === 0 && <p className="muted">No stored enquiries or submissions are disabled.</p>}
-      {enquiries.map(item => <article className="panel p-5 space-y-3" key={item.id}>
+      {visibleEnquiries.map(item => <article className="panel p-5 space-y-3" key={item.id}>
         <div className="flex flex-wrap justify-between gap-2">
           <strong>{item.name}</strong><span className="muted text-xs">{new Date(item.created_at).toLocaleString()}</span>
         </div>
         <p className="text-sm">{item.phone} {item.email ? `· ${item.email}` : ""}</p>
+        <div className="flex flex-wrap gap-2">
+          <a className="btn btn-outline" href={`https://wa.me/${item.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent("Hello " + item.name + ", thank you for your general enquiry. We are following up on your message.")}`} target="_blank" rel="noopener noreferrer">WhatsApp follow-up</a>
+          <a className="btn btn-outline" href={`tel:${item.phone.replace(/[^+0-9]/g, "")}`}>Call</a>
+          {item.email && <a className="btn btn-outline" href={`mailto:${item.email}?subject=${encodeURIComponent("Follow-up to your general enquiry")}`}>Email</a>}
+        </div>
         <p className="muted text-sm">{item.category || "General"} · {item.message}</p>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="block text-sm">Status

@@ -40,7 +40,9 @@ export async function PATCH(request: Request) {
   const expectedOrigin = process.env.NEXT_PUBLIC_SITE_URL;
   const origin = request.headers.get("origin");
   try {
-    if (!expectedOrigin || !origin || new URL(origin).origin !== new URL(expectedOrigin).origin) {
+    const requestOrigin = new URL(request.url).origin;
+    const canonicalOrigin = expectedOrigin ? new URL(expectedOrigin).origin : null;
+    if (!origin || (origin !== requestOrigin && origin !== canonicalOrigin)) {
       return NextResponse.json({ error: "Invalid request origin." }, { status: 403, headers: noStore });
     }
   } catch {
