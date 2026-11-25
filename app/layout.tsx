@@ -9,6 +9,7 @@ export const metadata:Metadata={
  metadataBase:new URL(siteUrl),
  manifest:"/manifest.webmanifest",
  applicationName:"Advocate Ashutosh Saini",
+ icons:{icon:[{url:"/icon.svg",type:"image/svg+xml"}],apple:[{url:"/icon.svg",type:"image/svg+xml"}]},
  openGraph:{type:"website",siteName:"Advocate Ashutosh Saini",title:"Advocate Ashutosh Saini | Legal Information",description:"Professional profile and general legal information from Rohini, Delhi.",url:siteUrl},
  twitter:{card:"summary",title:"Advocate Ashutosh Saini | Legal Information",description:"Professional profile and general legal information from Rohini, Delhi."},
 };
