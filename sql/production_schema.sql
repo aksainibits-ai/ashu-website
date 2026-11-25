@@ -43,12 +43,16 @@ create table if not exists public.articles (
 alter table public.articles enable row level security;
 create index if not exists articles_publication_idx on public.articles(language, published_at desc) where status = 'published';
 create index if not exists articles_schedule_idx on public.articles(scheduled_for) where status = 'approved';
+create index if not exists articles_created_by_idx on public.articles(created_by);
+create index if not exists articles_approved_by_idx on public.articles(approved_by);
 drop policy if exists "public can read published articles" on public.articles;
-create policy "public can read published articles" on public.articles for select to anon, authenticated
-  using (status = 'published');
 drop policy if exists "staff can read all articles" on public.articles;
-create policy "staff can read all articles" on public.articles for select to authenticated
-  using (exists (select 1 from public.profiles p where p.id = (select auth.uid())));
+create policy "published articles and staff can read" on public.articles
+  for select to anon, authenticated
+  using (
+    status = 'published'
+    or exists (select 1 from public.profiles p where p.id = (select auth.uid()))
+  );
 drop policy if exists "staff can create drafts" on public.articles;
 create policy "staff can create drafts" on public.articles for insert to authenticated
   with check (
