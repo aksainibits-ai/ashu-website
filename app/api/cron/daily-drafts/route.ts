@@ -20,14 +20,15 @@ export async function GET(request: Request) {
   if (lockError || !run) return NextResponse.json({ message: "A daily run already exists or the lock could not be acquired." }, { status: 409 });
 
   try {
-    const urls = new Set<string>();
-    for (const feed of feeds.slice(0, 8)) {
-      const feedUrl = new URL(feed);
-      if (feedUrl.protocol !== "https:" || !isAllowedPrimarySource(feed)) continue;
-      const response = await fetch(feed, { redirect: "error", signal: AbortSignal.timeout(8000), cache: "no-store" });
-      if (response.ok) for (const link of extractFeedLinks((await response.text()).slice(0, 500000))) urls.add(link);
-    }
-    const sourceUrls = [...urls].slice(0, 5);
+    const feedResults = await Promise.all(feeds.slice(0, 8).map(async feed => {
+      try {
+        if (!isAllowedPrimarySource(feed)) return [];
+        const response = await fetch(feed, { redirect: "error", signal: AbortSignal.timeout(8000), cache: "no-store" });
+        if (!response.ok || !/(xml|rss|atom)/i.test(response.headers.get("content-type") || "")) return [];
+        return extractFeedLinks((await response.text()).slice(0, 500000));
+      } catch { return []; }
+    }));
+    const sourceUrls = [...new Set(feedResults.flat())].slice(0, 5);
     if (!sourceUrls.length) throw new Error("No approved primary-source articles were found in configured feeds.");
     const articles = await generateBilingualDrafts(sourceUrls, null);
     await admin.from("blog_generation_runs").update({ status: "completed", article_ids: articles.map(a => a.id), completed_at: new Date().toISOString() }).eq("run_date", day);

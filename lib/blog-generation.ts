@@ -32,8 +32,7 @@ function htmlToText(html: string) {
 
 export async function fetchPrimarySources(urls: string[]) {
   if (urls.length < 1 || urls.length > 5) throw new Error("Provide between one and five primary-source URLs.");
-  const sources: { url: string; title: string; text: string }[] = [];
-  for (const raw of [...new Set(urls)]) {
+  return Promise.all([...new Set(urls)].map(async raw => {
     if (!isAllowedPrimarySource(raw)) throw new Error("A source URL is not on the approved primary-source domain list.");
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 9000);
@@ -51,10 +50,9 @@ export async function fetchPrimarySources(urls: string[]) {
       const title = rawText.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, "").trim() || new URL(raw).hostname;
       const text = htmlToText(rawText);
       if (text.length < 300) throw new Error("Source page did not contain enough readable text.");
-      sources.push({ url: raw, title, text });
+      return { url: raw, title, text };
     } finally { clearTimeout(timeout); }
-  }
-  return sources;
+  }));
 }
 
 export function extractFeedLinks(xml: string) {
@@ -73,7 +71,7 @@ export async function generateBilingualDrafts(sourceUrls: string[], createdBy: s
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
   const sources = await fetchPrimarySources(sourceUrls);
-  const client = new OpenAI({ apiKey, timeout: 45_000, maxRetries: 1 });
+  const client = new OpenAI({ apiKey, timeout: 35_000, maxRetries: 0 });
   const sourcePack = sources.map((s, i) => `SOURCE ${i + 1}\nTITLE: ${s.title}\nURL: ${s.url}\nTEXT:\n${s.text}`).join("\n\n");
   const completion = await client.chat.completions.create({
     model: process.env.OPENAI_MODEL || "gpt-4.1-mini",

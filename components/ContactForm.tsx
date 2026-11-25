@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import Link from "next/link";
 
 export default function ContactForm({enabled,lang}:{enabled:boolean;lang:"en"|"hi"}) {
  const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
@@ -22,7 +23,7 @@ export default function ContactForm({enabled,lang}:{enabled:boolean;lang:"en"|"h
   <label className="block text-sm">{en?"General category":"सामान्य श्रेणी"}<select className="field mt-1" name="category"><option value="General">{en?"General":"सामान्य"}</option><option value="Civil">{en?"Civil":"दीवानी"}</option><option value="Criminal">{en?"Criminal":"आपराधिक"}</option><option value="Property">{en?"Property":"संपत्ति"}</option><option value="Commercial">{en?"Commercial":"व्यावसायिक"}</option><option value="Other">{en?"Other":"अन्य"}</option></select></label>
   <label className="block text-sm">{en?"Brief message":"संक्षिप्त संदेश"}<textarea className="field mt-1 min-h-28" name="message" required minLength={10} maxLength={1500}/></label>
   <label className="hidden" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off"/></label>
-  <label className="flex gap-3 text-sm items-start"><input type="checkbox" name="consent" required className="mt-1"/><span>{en?"I consent to this information being used only to respond to this enquiry, subject to the Privacy Policy.":"मैं इस जानकारी के उपयोग की सहमति देता/देती हूँ, केवल इस पूछताछ का उत्तर देने के लिए और गोपनीयता नीति के अधीन।"}</span></label>
+  <label className="flex gap-3 text-sm items-start"><input type="checkbox" name="consent" required className="mt-1"/><span>{en?"I consent to this information being used only to respond to this enquiry, subject to the Privacy Policy.":"मैं इस जानकारी के उपयोग की सहमति देता/देती हूँ, केवल इस पूछताछ का उत्तर देने के लिए और गोपनीयता नीति के अधीन।"} <Link className="underline gold" href={`/${lang}/privacy`}>{en?"Privacy Policy":"गोपनीयता नीति"}</Link></span></label>
   <button className="btn" disabled={busy}>{busy?(en?"Sending…":"भेजा जा रहा है…"):(en?"Submit enquiry":"पूछताछ भेजें")}</button>
   <p className="muted text-sm" aria-live="polite">{message}</p>
  </form>;
