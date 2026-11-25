@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enter a general question of up to 1,800 characters." }, { status: 400 });
     }
     const message = body.message.trim();
-    if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i.test(message) || /(?:\\+?91[- ]?)?[6-9]\\d{9}/.test(message)) {
+    if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(message) || /(?:\+?91[- ]?)?[6-9]\d{9}/.test(message)) {
       return NextResponse.json({ error: "Please remove personal contact details and ask only a general legal question." }, { status: 400 });
     }
     const language = body.language === "hi" ? "hi" : "en";
