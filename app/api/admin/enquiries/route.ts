@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStaff } from "@/lib/authz";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 const noStore = { "Cache-Control": "private, no-store" };
@@ -13,7 +13,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403, headers: noStore });
   }
 
-  const admin = createAdminClient();
+  const admin = await createClient();
   const [enquiryResult, auditResult] = await Promise.all([
     admin.from("enquiries")
       .select("id,name,phone,email,category,message,status,internal_notes,created_at,updated_at,retention_until")
@@ -64,7 +64,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "No changes supplied." }, { status: 400, headers: noStore });
   }
 
-  const admin = createAdminClient();
+  const admin = await createClient();
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (body.status !== undefined) update.status = body.status;
   if (body.internal_notes !== undefined) update.internal_notes = body.internal_notes.trim() || null;
