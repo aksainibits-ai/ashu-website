@@ -128,7 +128,7 @@ alter table public.blog_generation_runs enable row level security;
 grant all on public.blog_generation_runs to service_role;
 revoke all on public.blog_generation_runs from anon, authenticated;
 
--- Server-only, hashed-key rate limiter. Function is outside exposed public schema.
+-- Server-only hashed-key rate limiter. Only service_role may execute the public RPC; client roles are explicitly revoked.
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
 create table if not exists private.api_rate_limits (
