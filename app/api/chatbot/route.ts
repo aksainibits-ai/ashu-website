@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { profile } from "@/lib/content";
+import { answerFromKnowledge } from "@/lib/ashu-ai/knowledge";
 export const dynamic = "force-dynamic";
 type Language = "en" | "hi";
 type OfficialSource = { label: string; url: string };
@@ -67,9 +68,19 @@ function getSources(message:string,language:Language):OfficialSource[]{
  else keys=["indiaCode","eCourts"];
  return [...new Set(keys)].map(key=>sourceCatalog[key][language]);
 }
-function fallback(message:string,language:Language){
+async function fallback(message:string,language:Language){
+ try {
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const db=createAdminClient();
+  const {data}=await db.from("ai_knowledge_entries").select("title,question_patterns,answer,source_urls,category").eq("language",language).eq("status","approved").limit(150);
+  const custom=(data||[]).map((row:any)=>({language,title:row.title,patterns:Array.isArray(row.question_patterns)?row.question_patterns:[],answer:row.answer,category:row.category||"general",sources:Array.isArray(row.source_urls)?row.source_urls:[]}));
+  const match=answerFromKnowledge(message,language,custom);
+  if(match)return {answer:match.answer,sources:match.sources.length?match.sources:getSources(message,language),mode:"faq" as const};
+ } catch {}
+ const builtIn=answerFromKnowledge(message,language);
+ if(builtIn)return {answer:builtIn.answer,sources:builtIn.sources,mode:"faq" as const};
  const match=findFaq(message,language);
- return {answer:match?.answer??(language==="hi"?"इस विषय पर उपलब्ध FAQ संग्रह में सटीक उत्तर नहीं मिला। कृपया India Code या संबंधित न्यायालय की आधिकारिक वेबसाइट देखें। मैं व्यक्तिगत कानूनी सलाह नहीं दे सकता।":"I could not find a reliable match in the curated FAQ library. Please consult India Code or the relevant court's official website. I cannot provide individual legal advice."),sources:getSources(message,language),mode:"faq" as const};
+ return {answer:match?.answer??(language==="hi"?"इस विषय पर उपलब्ध स्वीकृत जानकारी में सटीक उत्तर नहीं मिला। कृपया India Code या संबंधित न्यायालय की आधिकारिक वेबसाइट देखें। मैं व्यक्तिगत कानूनी सलाह नहीं दे सकता।":"I could not find a reliable match in the approved knowledge library. Please consult India Code or the relevant court's official website. I cannot provide individual legal advice."),sources:getSources(message,language),mode:"faq" as const};
 }
 async function generateAiAnswer(message:string,language:Language){
  const apiKey=process.env.OPENAI_API_KEY;if(!apiKey)return null;
@@ -112,7 +123,7 @@ export async function POST(request:Request){
   if(hasSensitiveDetails(message))return NextResponse.json({error:"Please remove personal contact or identity details and ask only a general question."},{status:400});
   const language:Language=body.language==="hi"?"hi":"en";let result=null;
   if(process.env.OPENAI_API_KEY){try{result=await generateAiAnswer(message,language);}catch{result=null;}}
-  result??=fallback(message,language);
+  result??=await fallback(message,language);
   return NextResponse.json(result,{headers:{"Cache-Control":"no-store"}});
  }catch{return NextResponse.json({error:"The assistant is temporarily unavailable."},{status:503});}
 }
