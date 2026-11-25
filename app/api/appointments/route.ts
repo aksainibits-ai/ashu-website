@@ -31,8 +31,9 @@ export async function POST(request: Request) {
     });
     if (error) {
       const unavailable = /no longer available|invalid appointment request/i.test(error.message);
+      const limited = /request limit reached/i.test(error.message);
       return NextResponse.json({ error: unavailable ? "That slot is no longer available. Please refresh and choose another." : "Appointment requests are temporarily unavailable." },
-        { status: unavailable ? 409 : 503, headers: noStore });
+        { status: limited ? 429 : unavailable ? 409 : 503, headers: noStore });
     }
     return NextResponse.json({ ok: true, appointmentId: data, message: "Your request is pending office confirmation." },
       { status: 201, headers: noStore });

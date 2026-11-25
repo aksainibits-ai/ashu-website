@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   if (!Number.isFinite(startsAt.getTime()) || startsAt.getTime() < Date.now() + 10*60000)
     return NextResponse.json({ error: "Choose a future time at least 10 minutes from now." }, { status: 400, headers: noStore });
   const endsAt = new Date(startsAt.getTime() + 30*60000);
-  const admin = createAdminClient();
+  const admin = await createClient();
   const { data, error } = await admin.from("appointment_slots").insert({
     starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(), created_by: staff.userId,
   }).select("id,starts_at,ends_at,is_available").single();
