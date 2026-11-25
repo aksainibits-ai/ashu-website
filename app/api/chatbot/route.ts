@@ -33,13 +33,27 @@ const answers = {
   ]
 } as const;
 
-function getAnswer(message: string, language: "en" | "hi") {
+function matchesKeyword(message: string, keyword: string) {
+  const key = keyword.toLocaleLowerCase().trim();
+  if (/[\u0900-\u097f]/u.test(key)) return message.includes(key);
+  const escaped = key.replace(/[.*+?^{}()|[\]\\]/g, "\\function getAnswer(message: string, language: "en" | "hi") {
   const normalized = message.toLocaleLowerCase();
   const match = answers[language].find((entry) => entry.keys.some((key) => normalized.includes(key.toLocaleLowerCase())));
   if (match) return match.answer;
   return language === "hi"
     ? "इस विषय पर मेरे पास अभी सत्यापित सामान्य उत्तर उपलब्ध नहीं है। कृपया India Code, संबंधित न्यायालय की आधिकारिक वेबसाइट या सरकारी स्रोत देखें। मैं व्यक्तिगत कानूनी सलाह नहीं दे सकता।"
     : "I do not have a verified general answer for that topic in this offline information assistant. Please consult India Code, the relevant court's official website or another government source. I cannot provide individual legal advice.";
+}").replace(/\s+/g, "\\s+");
+  return new RegExp("(?:^|[^a-z0-9])" + escaped + "(?:$|[^a-z0-9])", "i").test(message);
+}
+
+function getAnswer(message: string, language: "en" | "hi") {
+  const normalized = message.normalize("NFC").toLocaleLowerCase();
+  const match = answers[language].find((entry) => entry.keys.some((key) => matchesKeyword(normalized, key)));
+  if (match) return match.answer;
+  return language === "hi"
+    ? "इस विषय पर मेरे पास अभी उपलब्ध FAQ संग्रह में उत्तर नहीं है। कृपया India Code, संबंधित न्यायालय की आधिकारिक वेबसाइट या सरकारी स्रोत देखें। मैं व्यक्तिगत कानूनी सलाह नहीं दे सकता।"
+    : "I could not find a matching topic in the available FAQ library. Please consult India Code, the relevant court's official website or another government source. I cannot provide individual legal advice.";
 }
 
 export async function POST(request: Request) {
@@ -48,13 +62,21 @@ export async function POST(request: Request) {
     const origin = request.headers.get("origin");
     const expected = process.env.NEXT_PUBLIC_SITE_URL;
     if (!origin || !expected || new URL(origin).origin !== new URL(expected).origin) return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
+    if (!request.headers.get("content-type")?.toLowerCase().includes("application/json")) {
+      return NextResponse.json({ error: "JSON requests only." }, { status: 415 });
+    }
     if (!(await enforceRateLimit(request, "chatbot", 15, 3600))) return NextResponse.json({ error: "Please try again later." }, { status: 429 });
     const body = await request.json().catch(() => null);
     if (!body || typeof body.message !== "string" || body.message.trim().length < 2 || body.message.length > 1800) {
       return NextResponse.json({ error: "Enter a general question of up to 1,800 characters." }, { status: 400 });
     }
     const message = body.message.trim();
-    if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(message) || /(?:\+?91[- ]?)?[6-9]\d{9}/.test(message)) {
+    const compact = message.replace(/[\s-]/g, "");
+    const containsEmail = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(message);
+    const containsPhone = /(?:\+?91[- ]?)?[6-9]\d{9}/.test(message);
+    const containsAadhaarLikeNumber = /(?:^|\D)\d{12}(?:\D|$)/.test(compact);
+    const containsPanLikeNumber = /\b[A-Z]{5}\d{4}[A-Z]\b/i.test(message);
+    if (containsEmail || containsPhone || containsAadhaarLikeNumber || containsPanLikeNumber) {
       return NextResponse.json({ error: "Please remove personal contact details and ask only a general legal question." }, { status: 400 });
     }
     const language = body.language === "hi" ? "hi" : "en";
