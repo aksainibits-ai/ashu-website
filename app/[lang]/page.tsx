@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {ArrowUpRight,BookOpen,BriefcaseBusiness,Building2,FileCheck2,Landmark,MessageCircle,Scale,ShieldCheck,Gavel,FileText,Home as HomeIcon} from "lucide-react";
 import {copy,Lang,practiceAreas,profile} from "@/lib/content";
 export default async function Home({params}:{params:Promise<{lang:Lang}>}) {
- const {lang}=await params;const en=lang==="en";const c=copy[lang];
+ const {lang}=await params;
+ if(lang!=="en"&&lang!=="hi")notFound();
+ const en=lang==="en";const c=copy[lang];
  const t=en?{
   eyebrow:"Professional profile · Legal information · Delhi",lead:"A clearer view of",accent:"the law.",intro:"A professional profile and a carefully curated resource for understanding legal concepts, court processes and public legal information.",primary:"Explore the professional profile",secondary:"Browse areas of practice",note:"This website provides general information. It does not offer individual legal advice or solicit legal work.",
   principles:[["Clarity","Plain-language information about legal concepts and procedures."],["Care","A measured, respectful approach to professional information."],["Responsibility","Verify current law through official sources."]],
